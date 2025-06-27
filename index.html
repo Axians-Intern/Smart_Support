@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Axians Smart Support</title>
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            background: linear-gradient(to right, #0469b9, #e6ecf9);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            /* overflow: hidden;   REMOVED! */
+        }
+
+        .container {
+            display: flex;
+            gap: 2em;
+            width: 100%;
+            max-width: 1400px;
+            padding: 2.2em 1em 2.2em 0em;
+            margin-left: 0;
+            box-sizing: border-box;
+            overflow-x: auto;    /* allow horizontal scrolling if needed */
+        }
+
+        .left,
+        .right {
+            background: #fff;
+            border-radius: 18px;
+            padding: 2.5em 2em 2em 2em;
+            box-shadow: 0 4px 18px rgba(4, 105, 185, 0.10);
+            display: flex;
+            flex-direction: column;
+            min-width: 340px;
+            min-height: 550px;
+            width: 0;
+            flex: 1 1 0;
+        }
+
+        .left {
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .logo {
+            max-width: 180px;
+            margin-bottom: 0.8em;
+            margin-top: 0.2em;
+        }
+
+        h2 {
+            color: #0469b9;
+            margin: 0 0 1.5em 0;
+            font-size: 1.45em;
+            font-weight: 700;
+        }
+
+        form {
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 1em;
+            font-size: 1.05em;
+            border: 2px solid #0469b9;
+            border-radius: 14px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            background: #fafbfc;
+            color: #222;
+            box-sizing: border-box;
+            margin-bottom: 1.3em;
+        }
+
+        button {
+            display: block;
+            width: 140px;
+            margin: 0 auto 0 0;
+            background-color: #0469b9;
+            color: white;
+            padding: 0.72em 0;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.12em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.25s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(4, 105, 185, 0.07);
+        }
+
+        button:hover {
+            background-color: #034f90;
+        }
+
+        .success {
+            margin-top: 1.1em;
+            color: #149933;
+            font-weight: 600;
+        }
+
+        #loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 1em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0469b9;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+
+        /* ----- RIGHT SECTION ----- */
+        h3 {
+            color: #0469b9;
+            font-size: 1.15em;
+            margin-top: 0;
+            margin-bottom: 1.2em;
+            font-weight: 700;
+        }
+
+        pre {
+            background-color: #f3f3f3;
+            padding: 0.8em 1em;
+            border-radius: 11px;
+            font-size: 0.99em;
+            margin-bottom: 1em;
+            line-height: 1.48;
+            box-shadow: 0 1px 4px rgba(4, 105, 185, 0.05);
+            overflow-x: auto;
+        }
+
+        /* --- Modern Dashboard Table --- */
+        .sql-result {
+            width: 100%;
+        }
+
+        .sql-table-wrapper {
+            width: 100%;
+            max-height: 330px;
+            overflow-y: auto;
+            border-radius: 18px;
+            box-shadow: 0 3px 16px rgba(4, 105, 185, 0.06);
+            margin: 1.4em 0 0 0;
+            background: #fff;
+            border: 1px solid #e4eef8; /* subtle border for extra modern look */
+        }
+
+        .sql-result table {
+            width: 100%;
+            border-collapse: collapse;
+            background: transparent;
+            font-size: 1.05em;
+        }
+
+        .sql-result th,
+        .sql-result td {
+            padding: 0.7em 1.1em;
+            border: none;
+        }
+
+        .sql-result th {
+            background: linear-gradient(90deg, #0469b9 85%, #42a4e9 100%);
+            color: #fff;
+            font-weight: 700;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            border-bottom: 2px solid #034f90;
+            letter-spacing: 0.04em;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .sql-result td {
+            background: #f7fafd;
+            color: #222;
+            font-weight: 500;
+        }
+
+        .sql-result tr:nth-child(even) td {
+            background: #f2f6fb;
+        }
+
+        .sql-result tr:hover td {
+            background: #e6f2fd;
+        }
+
+        .sql-result tr:last-child td {
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        /* Scrollbar styles */
+        .sql-table-wrapper {
+            scrollbar-width: thin;
+            scrollbar-color: #68a9ea #f9f9f9;
+        }
+        .sql-table-wrapper::-webkit-scrollbar {
+            height: 7px;
+            width: 7px;
+            background: #f9f9f9;
+        }
+        .sql-table-wrapper::-webkit-scrollbar-thumb {
+            background: #68a9ea;
+            border-radius: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                gap: 1em;
+                padding: 1em;
+                margin-left: 0;
+            }
+            .left, .right {
+                padding: 1.2em;
+                min-width: unset;
+                min-height: unset;
+            }
+            .sql-table-wrapper {
+                max-height: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="left">
+            <img src="{{ url_for('static', filename='logom.png') }}" alt="Logo Axians" class="logo">
+            <h2>Axians Smart Support</h2>
+            <form method="POST">
+                <textarea name="mail_message" placeholder="Tapez ici :&#10;Objet : ...&#10;Message : ..." required></textarea>
+                <button type="submit">Envoyer</button>
+            </form>
+            {% if confirmation %}
+            <div class="success">✅ Message traité avec succès !</div>
+            {% endif %}
+            <div id="loading">
+                <div class="spinner"></div>
+                <p>⏳ L’IA réfléchit…</p>
+            </div>
+        </div>
+
+        <div class="right">
+            <h3>🧠 Réponse IA</h3>
+            {% if sql %}
+            <p><strong>Requête SQL générée :</strong></p>
+            <pre>{{ sql }}</pre>
+            {% endif %}
+
+            {% if result %}
+            <p><strong>Résultat :</strong></p>
+            <div class="sql-result">
+                <div class="sql-table-wrapper">
+                    {{ result|safe }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        const form = document.querySelector("form");
+        const loading = document.getElementById("loading");
+        form.addEventListener("submit", () => {
+            loading.style.display = "flex";
+        });
+    </script>
+</body>
+</html>
+<script>
+    // Show loading spinner when form is submitted
+    document.querySelector("form").addEventListener("submit", function() {
+        document.getElementById("loading").style.display = "flex";
+    });
