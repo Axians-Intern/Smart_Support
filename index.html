@@ -17,7 +17,6 @@
             justify-content: center;
             align-items: flex-start;
             min-height: 100vh;
-            /* overflow: hidden;   REMOVED! */
         }
 
         .container {
@@ -28,7 +27,7 @@
             padding: 2.2em 1em 2.2em 0em;
             margin-left: 0;
             box-sizing: border-box;
-            overflow-x: auto;    /* allow horizontal scrolling if needed */
+            overflow-x: auto;
         }
 
         .left,
@@ -149,7 +148,6 @@
             overflow-x: auto;
         }
 
-        /* --- Modern Dashboard Table --- */
         .sql-result {
             width: 100%;
         }
@@ -162,7 +160,7 @@
             box-shadow: 0 3px 16px rgba(4, 105, 185, 0.06);
             margin: 1.4em 0 0 0;
             background: #fff;
-            border: 1px solid #e4eef8; /* subtle border for extra modern look */
+            border: 1px solid #e4eef8;
         }
 
         .sql-result table {
@@ -211,7 +209,6 @@
             border-bottom-right-radius: 12px;
         }
 
-        /* Scrollbar styles */
         .sql-table-wrapper {
             scrollbar-width: thin;
             scrollbar-color: #68a9ea #f9f9f9;
@@ -226,7 +223,6 @@
             border-radius: 10px;
         }
 
-        /* Responsive */
         @media (max-width: 900px) {
             .container {
                 flex-direction: column;
@@ -252,7 +248,7 @@
             <img src="{{ url_for('static', filename='logom.png') }}" alt="Logo Axians" class="logo">
             <h2>Axians Smart Support</h2>
             <form method="POST">
-                <textarea name="mail_message" placeholder="Tapez ici :&#10;Objet : ...&#10;Message : ..." required></textarea>
+                <textarea id="mail_message" name="mail_message" placeholder="Tapez ici :&#10;Objet : ...&#10;Message : ..." required></textarea>
                 <button type="submit">Envoyer</button>
             </form>
             {% if confirmation %}
@@ -282,16 +278,24 @@
         </div>
     </div>
     <script>
-        const form = document.querySelector("form");
-        const loading = document.getElementById("loading");
-        form.addEventListener("submit", () => {
-            loading.style.display = "flex";
+        document.querySelector("form").addEventListener("submit", function() {
+            document.getElementById("loading").style.display = "flex";
+        });
+
+        const textarea = document.getElementById('mail_message');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const last = localStorage.getItem('last_message');
+            if (last) textarea.value = last;
+        });
+
+        textarea.addEventListener('input', () => {
+            localStorage.setItem('last_message', textarea.value);
+        });
+
+        document.querySelector("form").addEventListener("submit", function() {
+       
         });
     </script>
 </body>
 </html>
-<script>
-    // Show loading spinner when form is submitted
-    document.querySelector("form").addEventListener("submit", function() {
-        document.getElementById("loading").style.display = "flex";
-    });
