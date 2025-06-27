@@ -7,7 +7,7 @@ import re
 app = Flask(__name__)
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "phi3"
+MODEL_NAME = "qwen2"
 
 # === Database schema for the AI ===
 schema = """
@@ -61,15 +61,185 @@ Table: organismes_preconises
 
 Table: alembic_version
 - version_num
-# To get employees certified in a formation, use:
-# ressources JOIN certifications ON ressources.id = certifications.id_ressource
-#             JOIN formations ON certifications.id_formation = formations.id
-# and filter formations.libelle by the certification name (example: 'CCNA')
 """
 
-def call_phi3(prompt):
+# Improved prompt for better LLM output
+def build_prompt(message):
+    return f"""
+Tu es un assistant expert SQL.
+
+Voici le schéma simplifié de la base de données :
+{schema}
+
+Ta tâche :
+- Lis le message ci-dessous et génère une requête SQL, compatible uniquement avec SQLite, pour répondre à la question.
+- Utilise toujours les noms de tables et colonnes dans le schéma.
+- N’invente jamais de nouvelles tables ou colonnes.
+- Si la question ne concerne pas la base, ou que tu n’es pas sûr, réponds uniquement « Je ne sais pas ».
+- Si la question est confuse, réponds uniquement « Je ne sais pas ».
+- Ta réponse DOIT ÊTRE une requête SQL brute, jamais du texte.
+- Ne mets jamais de commentaires, ni de code block.
+
+**Exemples :**
+
+Q: Quels employés ont le certificat CCNA ?
+R: SELECT r.nom, r.prenom FROM ressources r JOIN certifications c ON r.id = c.id_ressource JOIN formations f ON c.id_formation = f.id WHERE f.libelle = 'CCNA';
+
+Q : Liste tous les certificats obtenus par Oumaima BAHIL
+R : SELECT f.libelle AS certificat FROM certifications c JOIN formations f ON c.id_formation = f.id JOIN ressources r ON c.id_ressource = r.id WHERE r.prenom = 'Oumaima' AND r.nom = 'BAHIL';
+
+Q: Meow
+R: Je ne sais pas
+Q : Liste tous les employés  
+R :
+SELECT nom, prenom FROM ressources;
+
+Q : Donne tous les certificats obtenus par Rihab NIKH  
+R :
+SELECT f.libelle AS certificat
+FROM certifications c
+JOIN formations f ON c.id_formation = f.id
+JOIN ressources r ON c.id_ressource = r.id
+WHERE r.prenom = 'Rihab' AND r.nom = 'NIKH';
+
+Q : Liste toutes les formations disponibles  
+R :
+SELECT libelle FROM formations;
+
+Q : Liste tous les diplômes de Ahmed Zouhair  
+R :
+SELECT d.libelle AS diplome, d.ecole, d.date_obtention
+FROM diplomes d
+JOIN ressources r ON d.id_ressource = r.id
+WHERE r.prenom = 'Ahmed' AND r.nom = 'Zouhair';
+
+Q : Quelles sont les expériences professionnelles de Oumaima BAHIL ?  
+R :
+SELECT e.client, e.libelle_projet, e.date_debut, e.date_fin
+FROM experiences_pro e
+JOIN ressources r ON e.id_ressource = r.id
+WHERE r.prenom = 'Oumaima' AND r.nom = 'BAHIL';
+
+Q : Donne les compétences de Yassine Karimi  
+R :
+SELECT c.id_sous_expertise, c.note_avv, c.note_integration, c.note_support
+FROM competences c
+JOIN ressources r ON c.id_ressource = r.id
+WHERE r.prenom = 'Yassine' AND r.nom = 'Karimi';
+
+Q : Liste toutes les entreprises  
+R :
+SELECT libelle FROM entreprises;
+
+Q : Liste toutes les directions  
+R :
+SELECT libelle FROM direction;
+
+Q : Liste toutes les expertises  
+R :
+SELECT libelle FROM expertises;
+
+Q : Liste tous les domaines  
+R :
+SELECT libelle FROM domaines;
+
+Q : Liste tous les constructeurs  
+R :
+SELECT libelle, strategique FROM constructeur;
+
+Q : Liste toutes les sous-expertises  
+R :
+SELECT libelle FROM sous_expertises;
+
+Q : Liste toutes les solutions disponibles  
+R :
+SELECT libelle FROM solutions;
+
+Q : Liste tous les codes et libellés de z_lov  
+R :
+SELECT code, libelle FROM z_lov;
+
+Q : Liste tous les codes de valeurs pour z_lov_value  
+R :
+SELECT code, libelle FROM z_lov_value;
+
+Q : Liste tous les organismes préconisés  
+R :
+SELECT nom FROM organismes_preconises;
+
+Q : Donne le numéro de version alembic  
+R :
+SELECT version_num FROM alembic_version;
+
+-- 🟦 Guide pour les jointures sur ce schéma
+
+-- 1️⃣ Jointure Ressources ↔ Certifications ↔ Formations
+-- But : Obtenir les certificats d’un employé.
+SELECT f.libelle AS certificat
+FROM certifications c
+JOIN formations f ON c.id_formation = f.id
+JOIN ressources r ON c.id_ressource = r.id
+WHERE r.nom = 'NOM' AND r.prenom = 'PRENOM';
+-- certifications relie un employé (id_ressource) à une formation (id_formation).
+-- On joint les trois pour trouver les certificats d’un employé précis.
+
+-- 2️⃣ Jointure Ressources ↔ Diplômes
+-- But : Trouver les diplômes d’un employé.
+SELECT d.libelle, d.ecole, d.date_obtention
+FROM diplomes d
+JOIN ressources r ON d.id_ressource = r.id
+WHERE r.nom = 'NOM' AND r.prenom = 'PRENOM';
+-- diplomes référence directement l’employé par id_ressource.
+
+-- 3️⃣ Jointure Ressources ↔ Experiences_pro
+-- But : Voir les expériences pro d’un employé.
+SELECT e.client, e.libelle_projet, e.date_debut, e.date_fin
+FROM experiences_pro e
+JOIN ressources r ON e.id_ressource = r.id
+WHERE r.nom = 'NOM' AND r.prenom = 'PRENOM';
+
+-- 4️⃣ Jointure Ressources ↔ Entreprises
+-- But : Savoir dans quelle entreprise travaille un employé.
+SELECT r.nom, r.prenom, e.libelle AS entreprise
+FROM ressources r
+JOIN entreprises e ON r.id_entreprise = e.id;
+
+-- 5️⃣ Jointure Competences ↔ Ressources
+-- But : Voir les compétences d’un employé.
+SELECT c.id_sous_expertise, c.note_avv, c.note_integration, c.note_support
+FROM competences c
+JOIN ressources r ON c.id_ressource = r.id
+WHERE r.nom = 'NOM' AND r.prenom = 'PRENOM';
+
+-- 6️⃣ Jointure sous_expertises ↔ expertises
+-- But : Lister toutes les sous-expertises d’une expertise.
+SELECT s.libelle AS sous_expertise, e.libelle AS expertise
+FROM sous_expertises s
+JOIN expertises e ON s.id_expertise = e.id;
+
+-- 7️⃣ Jointure solutions ↔ constructeur
+-- But : Lister toutes les solutions par constructeur.
+SELECT s.libelle AS solution, c.libelle AS constructeur
+FROM solutions s
+JOIN constructeur c ON s.id_constructeur = c.id;
+
+-- Pour lister les infos d’une table reliée par une colonne qui contient un identifiant (id_ressource, id_formation, etc.), utilise JOIN avec la clé correspondante.
+-- Si la question demande un “détail” (nom, label, etc.), il faut rejoindre la table contenant ce détail.
+
+-- Résumé visuel :
+-- Pour retrouver l’info :
+-- - Identifie la clé étrangère (colonne qui référence une autre table, ex. id_ressource)
+-- - JOIN sur cette colonne avec la clé primaire de l’autre table (id)
+-- - Ajoute le filtre selon la question (WHERE...)
+-Quand le message contient deux mots pour une personne, le premier mot correspond au nom, le second au prénom
+
+Utilise toujours LOWER() ou LIKE dans les clauses WHERE sur nom/prénom pour ignorer la casse.
+Q: {message}
+"""
+
+def call_qwen2(prompt):
     data = {
-        "model": "phi3",
+        "model": MODEL_NAME,
         "prompt": prompt,
         "stream": False
     }
@@ -77,7 +247,6 @@ def call_phi3(prompt):
         response = requests.post(OLLAMA_URL, json=data)
         response.raise_for_status()
         result_json = response.json()
-        print("🧠 Réponse JSON brute de l'IA :", result_json)
         reply = result_json["response"]
         return reply.strip(), None
     except Exception as e:
@@ -114,53 +283,36 @@ def index():
             confirmation = True
             return render_template("index.html", sql=sql, result=result, confirmation=confirmation)
 
-        # Add: handle greetings or irrelevant messages
         greetings = [
             "hello", "hi", "bonjour", "salut", "coucou", "cava", "cava?", "meow", "yo", "hey", "cc", "wesh"
         ]
         if message.lower() in greetings:
-            result = "👋 Hello! Pose-moi une question sur la base de données (ex : 'Quels sont les employees ayant certificat CCNA ?')"
+            result = "👋 Hello! Pose-moi une question sur la base de données (ex : 'Quels sont les employés ayant le certificat CCNA ?')"
             sql = ""
             confirmation = True
             return render_template("index.html", sql=sql, result=result, confirmation=confirmation)
 
-        full_prompt = f"""
-Tu es un expert SQL.
-
-Voici le schéma simplifié de la base de données :
-
-{schema}
-
-IMPORTANT :
-- Utilise uniquement les noms de tables et de colonnes exactement comme dans le schéma ci-dessus.
-- N’invente jamais de nouveaux noms de tables ou colonnes.
-- Si la question concerne des personnes, la table s’appelle ‘ressources’ (et pas ‘resources’).
-- Génère du SQL **compatible uniquement avec SQLite** (pas MySQL, ni Postgres).
-- Pour les dates, utilise les fonctions SQLite (par exemple, DATE(), datetime(), julianday()).
-- Si tu ne sais pas, dis-le.
-
-Lis attentivement le message suivant, et génère une requête SQL SQLite valide **sans erreur** pour y répondre :
-
-\"{message}\"
-
-Ta réponse doit être une requête SQL uniquement, sans commentaire.
-Quand la question est “liste”, ne donne que le strict minimum (nom, prénom).
-Ne mets pas de code block, juste le SQL brut.
-Si tu n’as pas compris la question, réponds par "Je ne sais pas".
-Si la question n'a aucun sens, ou ne concerne pas la base, réponds toujours par "Je ne sais pas".
-Ne mets pas de code block, juste le SQL brut.
-"""
-
-        sql, error_ia = call_phi3(full_prompt)
+        full_prompt = build_prompt(message)
+        sql, error_ia = call_qwen2(full_prompt)
 
         if sql:
             sql = clean_sql(sql)
             sql = sql.replace("resources", "ressources").replace("Resources", "ressources")
             sql = fix_sqlite_intervals(sql)
-            print("🟢 SQL FINAL:", sql)
 
+        # PROTECT: Don't execute if not a SELECT, or LLM says "Je ne sais pas", or if no table from schema
         if error_ia:
             result = error_ia
+        elif "je ne sais pas" in sql.lower():
+            result = "😅 Désolé, je ne sais pas répondre à cette question."
+        elif not sql.lower().startswith("select"):
+            result = "❌ L’IA n’a pas généré une requête SQL valide."
+        elif not any(t in sql.lower() for t in [
+            "ressources", "certifications", "formations", "diplomes", "experiences_pro",
+            "competences", "entreprises", "direction", "expertises", "domaines", "constructeur",
+            "sous_expertises", "solutions", "z_lov", "z_lov_value", "organismes_preconises"
+        ]):
+            result = "❌ La requête ne correspond à aucune table connue."
         else:
             try:
                 conn = sqlite3.connect("app.db")
