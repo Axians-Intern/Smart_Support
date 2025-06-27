@@ -1,272 +1,103 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <title>Axians Smart Support</title>
     <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            margin: 0;
-            background: linear-gradient(to right, #0469b9, #e6ecf9);
-            color: #333;
-            display: flex;
+        body { font-family: 'Poppins', sans-serif; margin: 0; background: linear-gradient(to right, #0469b9, #e6ecf9); color: #333; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        .container { display: flex; gap: 2em; width: 100%; max-width: 1400px; padding: 2.2em 1em 2.2em 0em; margin-left: 0; box-sizing: border-box; overflow-x: auto; }
+        .left, .right { background: #fff; border-radius: 18px; padding: 2.5em 2em 2em 2em; box-shadow: 0 4px 18px rgba(4, 105, 185, 0.10); display: flex; flex-direction: column; min-width: 340px; min-height: 550px; width: 0; flex: 1 1 0; }
+        .left { align-items: flex-start; justify-content: flex-start; }
+        .logo { max-width: 180px; margin-bottom: 0.8em; margin-top: 0.2em; }
+        h2 { color: #0469b9; margin: 0 0 1.5em 0; font-size: 1.45em; font-weight: 700; }
+        form { width: 100%; }
+        textarea { width: 100%; min-height: 140px; padding: 1em; font-size: 1.05em; border: 2px solid #0469b9; border-radius: 14px; resize: vertical; font-family: 'Courier New', monospace; background: #fafbfc; color: #222; box-sizing: border-box; margin-bottom: 0.8em; }
+        .prompt-helper { margin-bottom: 1.1em; color: #0469b9; background: #e6ecf9; padding: 0.7em 1em; border-radius: 11px; font-size: 1.01em; }
+        button { display: block; width: 140px; margin: 0 auto 0 0; background-color: #0469b9; color: white; padding: 0.72em 0; border: none; border-radius: 16px; font-size: 1.12em; font-weight: 600; cursor: pointer; transition: background 0.25s, box-shadow 0.2s; box-shadow: 0 2px 8px rgba(4, 105, 185, 0.07); }
+        button:hover { background-color: #034f90; }
+        .success { margin-top: 1.1em; color: #149933; font-weight: 600; }
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(30, 44, 70, 0.38);
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            align-items: center;
         }
-
-        .container {
-            display: flex;
-            gap: 2em;
-            width: 100%;
-            max-width: 1400px;
-            padding: 2.2em 1em 2.2em 0em;
-            margin-left: 0;
-            box-sizing: border-box;
-            overflow-x: auto;
-        }
-
-        .left,
-        .right {
+        #loading {
             background: #fff;
             border-radius: 18px;
-            padding: 2.5em 2em 2em 2em;
-            box-shadow: 0 4px 18px rgba(4, 105, 185, 0.10);
+            box-shadow: 0 4px 18px rgba(4, 105, 185, 0.18);
+            padding: 2.2em 2.5em 2em 2.5em;
             display: flex;
-            flex-direction: column;
-            min-width: 340px;
-            min-height: 550px;
-            width: 0;
-            flex: 1 1 0;
-        }
-
-        .left {
-            align-items: flex-start;
-            justify-content: flex-start;
-        }
-
-        .logo {
-            max-width: 180px;
-            margin-bottom: 0.8em;
-            margin-top: 0.2em;
-        }
-
-        h2 {
-            color: #0469b9;
-            margin: 0 0 1.5em 0;
-            font-size: 1.45em;
-            font-weight: 700;
-        }
-
-        form {
-            width: 100%;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 140px;
-            padding: 1em;
-            font-size: 1.05em;
-            border: 2px solid #0469b9;
-            border-radius: 14px;
-            resize: vertical;
-            font-family: 'Courier New', monospace;
-            background: #fafbfc;
-            color: #222;
-            box-sizing: border-box;
-            margin-bottom: 1.3em;
-        }
-
-        button {
-            display: block;
-            width: 140px;
-            margin: 0 auto 0 0;
-            background-color: #0469b9;
-            color: white;
-            padding: 0.72em 0;
-            border: none;
-            border-radius: 16px;
-            font-size: 1.12em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.25s, box-shadow 0.2s;
-            box-shadow: 0 2px 8px rgba(4, 105, 185, 0.07);
-        }
-
-        button:hover {
-            background-color: #034f90;
-        }
-
-        .success {
-            margin-top: 1.1em;
-            color: #149933;
-            font-weight: 600;
-        }
-
-        #loading {
-            display: none;
             flex-direction: column;
             align-items: center;
-            margin-top: 1em;
+            min-width: 260px;
         }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #0469b9;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg);}
-            100% { transform: rotate(360deg);}
-        }
-
-        /* ----- RIGHT SECTION ----- */
-        h3 {
-            color: #0469b9;
-            font-size: 1.15em;
-            margin-top: 0;
-            margin-bottom: 1.2em;
-            font-weight: 700;
-        }
-
-        pre {
-            background-color: #f3f3f3;
-            padding: 0.8em 1em;
-            border-radius: 11px;
-            font-size: 0.99em;
-            margin-bottom: 1em;
-            line-height: 1.48;
-            box-shadow: 0 1px 4px rgba(4, 105, 185, 0.05);
-            overflow-x: auto;
-        }
-
-        .sql-result {
-            width: 100%;
-        }
-
-        .sql-table-wrapper {
-            width: 100%;
-            max-height: 330px;
-            overflow-y: auto;
-            border-radius: 18px;
-            box-shadow: 0 3px 16px rgba(4, 105, 185, 0.06);
-            margin: 1.4em 0 0 0;
-            background: #fff;
-            border: 1px solid #e4eef8;
-        }
-
-        .sql-result table {
-            width: 100%;
-            border-collapse: collapse;
-            background: transparent;
-            font-size: 1.05em;
-        }
-
-        .sql-result th,
-        .sql-result td {
-            padding: 0.7em 1.1em;
-            border: none;
-        }
-
-        .sql-result th {
-            background: linear-gradient(90deg, #0469b9 85%, #42a4e9 100%);
-            color: #fff;
-            font-weight: 700;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            border-bottom: 2px solid #034f90;
-            letter-spacing: 0.04em;
-            text-align: left;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
-
-        .sql-result td {
-            background: #f7fafd;
-            color: #222;
-            font-weight: 500;
-        }
-
-        .sql-result tr:nth-child(even) td {
-            background: #f2f6fb;
-        }
-
-        .sql-result tr:hover td {
-            background: #e6f2fd;
-        }
-
-        .sql-result tr:last-child td {
-            border-bottom-left-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        .sql-table-wrapper {
-            scrollbar-width: thin;
-            scrollbar-color: #68a9ea #f9f9f9;
-        }
-        .sql-table-wrapper::-webkit-scrollbar {
-            height: 7px;
-            width: 7px;
-            background: #f9f9f9;
-        }
-        .sql-table-wrapper::-webkit-scrollbar-thumb {
-            background: #68a9ea;
-            border-radius: 10px;
-        }
-
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #0469b9; border-radius: 50%; width: 28px; height: 28px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+        h3 { color: #0469b9; font-size: 1.15em; margin-top: 0; margin-bottom: 1.2em; font-weight: 700; }
+        pre { background-color: #f3f3f3; padding: 0.8em 1em; border-radius: 11px; font-size: 0.99em; margin-bottom: 1em; line-height: 1.48; box-shadow: 0 1px 4px rgba(4, 105, 185, 0.05); overflow-x: auto; }
+        .sql-result { width: 100%; }
+        .sql-table-wrapper { width: 100%; max-height: 330px; overflow-y: auto; border-radius: 18px; box-shadow: 0 3px 16px rgba(4, 105, 185, 0.06); margin: 1.4em 0 0 0; background: #fff; border: 1px solid #e4eef8; }
+        .sql-result table { width: 100%; border-collapse: collapse; background: transparent; font-size: 1.05em; }
+        .sql-result th, .sql-result td { padding: 0.7em 1.1em; border: none; }
+        .sql-result th { background: linear-gradient(90deg, #0469b9 85%, #42a4e9 100%); color: #fff; font-weight: 700; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: 2px solid #034f90; letter-spacing: 0.04em; text-align: left; position: sticky; top: 0; z-index: 2; }
+        .sql-result td { background: #f7fafd; color: #222; font-weight: 500; }
+        .sql-result tr:nth-child(even) td { background: #f2f6fb; }
+        .sql-result tr:hover td { background: #e6f2fd; }
+        .sql-result tr:last-child td { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+        .sql-table-wrapper { scrollbar-width: thin; scrollbar-color: #68a9ea #f9f9f9; }
+        .sql-table-wrapper::-webkit-scrollbar { height: 7px; width: 7px; background: #f9f9f9; }
+        .sql-table-wrapper::-webkit-scrollbar-thumb { background: #68a9ea; border-radius: 10px; }
         @media (max-width: 900px) {
-            .container {
-                flex-direction: column;
-                gap: 1em;
-                padding: 1em;
-                margin-left: 0;
-            }
-            .left, .right {
-                padding: 1.2em;
-                min-width: unset;
-                min-height: unset;
-            }
-            .sql-table-wrapper {
-                max-height: 180px;
-            }
+            .container { flex-direction: column; gap: 1em; padding: 1em; margin-left: 0; }
+            .left, .right { padding: 1.2em; min-width: unset; min-height: unset; }
+            .sql-table-wrapper { max-height: 180px; }
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <div class="left">
             <img src="{{ url_for('static', filename='logom.png') }}" alt="Logo Axians" class="logo">
             <h2>Axians Smart Support</h2>
             <form method="POST">
-                <textarea id="mail_message" name="mail_message" placeholder="Tapez ici :&#10;Objet : ...&#10;Message : ..." required></textarea>
+                <div class="prompt-helper">
+                                        <div class="prompt-helper">
+                        <div style="display: flex; align-items: flex-start; gap: 0.7em;">
+                            <span style="font-size: 1.5em; margin-top: 2px;">💡</span>
+                            <div>
+                                <strong style="color: #034f90;">Astuce :</strong>
+                                <span>Pensez à poser une question claire&nbsp;:</span>
+                                <ul style="margin: 0.7em 0 0.2em 1.2em; padding: 0; color: #0469b9;">
+                                    <li><em>Quels sont les employés ayant le certificat <b>CCNA</b> ?</em></li>
+                                    <li><em>Liste tous les diplômes obtenus par <b>Rihab NIKH</b>.</em></li>
+                                </ul>
+                                <div style="margin-top: 0.5em; color: #333;">
+                                    <span style="font-weight: 500;">Pour les personnes, indiquez d’abord le <b>nom</b>, puis le <b>prénom</b> :</span><br>
+                                    <em style="color: #0469b9;">Exemple&nbsp;: “certificats de <b>BAHIL Oumaima</b>”</em>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <textarea id="mail_message" name="mail_message" placeholder="Tapez ici votre question..."></textarea>
                 <button type="submit">Envoyer</button>
             </form>
             {% if confirmation %}
             <div class="success">✅ Message traité avec succès !</div>
             {% endif %}
-            <div id="loading">
-                <div class="spinner"></div>
-                <p>⏳ L’IA réfléchit…</p>
-            </div>
         </div>
-
         <div class="right">
             <h3>🧠 Réponse IA</h3>
             {% if sql %}
             <p><strong>Requête SQL générée :</strong></p>
             <pre>{{ sql }}</pre>
             {% endif %}
-
             {% if result %}
             <p><strong>Résultat :</strong></p>
             <div class="sql-result">
@@ -277,25 +108,34 @@
             {% endif %}
         </div>
     </div>
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>⏳ L’IA réfléchit…</p>
+        </div>
+    </div>
     <script>
         document.querySelector("form").addEventListener("submit", function() {
-            document.getElementById("loading").style.display = "flex";
+            document.getElementById("loading-overlay").style.display = "flex";
         });
 
         const textarea = document.getElementById('mail_message');
-
         window.addEventListener('DOMContentLoaded', () => {
             const last = localStorage.getItem('last_message');
             if (last) textarea.value = last;
         });
-
         textarea.addEventListener('input', () => {
             localStorage.setItem('last_message', textarea.value);
-        });
-
-        document.querySelector("form").addEventListener("submit", function() {
-       
         });
     </script>
 </body>
 </html>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) {
+            loadingOverlay.style.display = "none";
+        }
+    });
+</script>
